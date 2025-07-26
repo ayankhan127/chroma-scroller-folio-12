@@ -3,28 +3,47 @@ import { motion } from 'framer-motion';
 
 const CustomCursor = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
-  const [isClicking, setIsClicking] = useState(false);
+  const [cursorVariant, setCursorVariant] = useState('default');
+  const [isVisible, setIsVisible] = useState(true);
 
   const updateMousePosition = useCallback((e: MouseEvent) => {
     setMousePosition({ x: e.clientX, y: e.clientY });
   }, []);
 
-  const handleMouseEnter = useCallback(() => setIsHovering(true), []);
-  const handleMouseLeave = useCallback(() => setIsHovering(false), []);
-  const handleMouseDown = useCallback(() => setIsClicking(true), []);
-  const handleMouseUp = useCallback(() => setIsClicking(false), []);
+  const handleMouseEnter = useCallback(() => setCursorVariant('hover'), []);
+  const handleMouseLeave = useCallback(() => setCursorVariant('default'), []);
+  const handleTextEnter = useCallback(() => setCursorVariant('text'), []);
+  const handleLinkEnter = useCallback(() => setCursorVariant('link'), []);
+  const handleMouseDown = useCallback(() => setCursorVariant('click'), []);
+  const handleMouseUp = useCallback(() => setCursorVariant('default'), []);
 
   useEffect(() => {
-    // Function to add event listeners to all interactive elements
     const addEventListeners = () => {
-      // Use a more comprehensive selector for interactive elements
+      // Interactive elements
       const hoverElements = document.querySelectorAll(
-        'button, a, [data-cursor-hover], input, textarea, select, [role="button"], [tabindex], .cursor-pointer'
+        'button, [data-cursor-hover], [role="button"], .cursor-pointer'
       );
       
+      // Text elements
+      const textElements = document.querySelectorAll(
+        'p, h1, h2, h3, h4, h5, h6, span, div[contenteditable], input, textarea'
+      );
+      
+      // Link elements
+      const linkElements = document.querySelectorAll('a');
+
       hoverElements.forEach(el => {
         el.addEventListener('mouseenter', handleMouseEnter);
+        el.addEventListener('mouseleave', handleMouseLeave);
+      });
+
+      textElements.forEach(el => {
+        el.addEventListener('mouseenter', handleTextEnter);
+        el.addEventListener('mouseleave', handleMouseLeave);
+      });
+
+      linkElements.forEach(el => {
+        el.addEventListener('mouseenter', handleLinkEnter);
         el.addEventListener('mouseleave', handleMouseLeave);
       });
 
@@ -33,19 +52,24 @@ const CustomCursor = () => {
           el.removeEventListener('mouseenter', handleMouseEnter);
           el.removeEventListener('mouseleave', handleMouseLeave);
         });
+        textElements.forEach(el => {
+          el.removeEventListener('mouseenter', handleTextEnter);
+          el.removeEventListener('mouseleave', handleMouseLeave);
+        });
+        linkElements.forEach(el => {
+          el.removeEventListener('mouseenter', handleLinkEnter);
+          el.removeEventListener('mouseleave', handleMouseLeave);
+        });
       };
     };
 
-    // Add initial event listeners
     let cleanup = addEventListeners();
 
-    // Create a mutation observer to watch for new elements
     const observer = new MutationObserver(() => {
-      cleanup(); // Clean up old listeners
-      cleanup = addEventListeners(); // Add listeners to new elements
+      cleanup();
+      cleanup = addEventListeners();
     });
 
-    // Start observing the document for changes
     observer.observe(document.body, {
       childList: true,
       subtree: true,
@@ -55,6 +79,8 @@ const CustomCursor = () => {
     window.addEventListener('mousemove', updateMousePosition);
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mouseleave', () => setIsVisible(false));
+    window.addEventListener('mouseenter', () => setIsVisible(true));
 
     return () => {
       cleanup();
@@ -62,107 +88,168 @@ const CustomCursor = () => {
       window.removeEventListener('mousemove', updateMousePosition);
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mouseleave', () => setIsVisible(false));
+      window.removeEventListener('mouseenter', () => setIsVisible(true));
     };
-  }, [updateMousePosition, handleMouseEnter, handleMouseLeave, handleMouseDown, handleMouseUp]);
+  }, [updateMousePosition, handleMouseEnter, handleMouseLeave, handleTextEnter, handleLinkEnter, handleMouseDown, handleMouseUp]);
+
+  const cursorVariants = {
+    default: {
+      scale: 1,
+      backgroundColor: 'hsl(var(--primary))',
+      mixBlendMode: 'difference',
+      width: 16,
+      height: 16,
+      border: 'none',
+    },
+    hover: {
+      scale: 2.5,
+      backgroundColor: 'transparent',
+      mixBlendMode: 'normal',
+      width: 60,
+      height: 60,
+      border: '2px solid hsl(var(--primary))',
+    },
+    text: {
+      scale: 1,
+      backgroundColor: 'transparent',
+      mixBlendMode: 'normal',
+      width: 2,
+      height: 24,
+      border: '1px solid hsl(var(--foreground))',
+    },
+    link: {
+      scale: 1.5,
+      backgroundColor: 'hsl(var(--accent))',
+      mixBlendMode: 'difference',
+      width: 20,
+      height: 20,
+      border: 'none',
+    },
+    click: {
+      scale: 0.8,
+      backgroundColor: 'hsl(var(--destructive))',
+      mixBlendMode: 'difference',
+      width: 12,
+      height: 12,
+      border: 'none',
+    }
+  };
+
+  const trailVariants = {
+    default: { scale: 1, opacity: 0.3 },
+    hover: { scale: 3, opacity: 0.1 },
+    text: { scale: 0.5, opacity: 0.2 },
+    link: { scale: 2, opacity: 0.4 },
+    click: { scale: 0.5, opacity: 0.5 }
+  };
 
   return (
     <>
-      {/* Main cursor - morphing shape */}
+      {/* Cursor trail */}
       <motion.div
-        className="fixed pointer-events-none z-[9999] mix-blend-difference"
+        className="fixed pointer-events-none z-[9997] rounded-full border border-primary/20"
         style={{
           left: mousePosition.x,
           top: mousePosition.y,
           transform: 'translate(-50%, -50%)',
         }}
         animate={{
-          width: isClicking ? '12px' : isHovering ? '40px' : '20px',
-          height: isClicking ? '12px' : isHovering ? '40px' : '20px',
-          borderRadius: isHovering ? '0%' : '50%',
-          backgroundColor: isClicking ? 'hsl(var(--destructive))' : isHovering ? 'hsl(var(--accent))' : 'hsl(var(--primary))',
-          rotate: isHovering ? 45 : 0,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 400,
-          damping: 25,
-        }}
-      />
-      
-      {/* Animated trail particles */}
-      <motion.div
-        className="fixed pointer-events-none z-[9998]"
-        style={{
-          left: mousePosition.x,
-          top: mousePosition.y,
-          transform: 'translate(-50%, -50%)',
-        }}
-        animate={{
-          scale: isHovering ? 3 : 1.5,
-          opacity: isHovering ? 0.8 : 0.2,
-          rotate: isHovering ? 180 : 0,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 200,
-          damping: 20,
-          delay: 0.1,
-        }}
-      >
-        <div className="relative w-12 h-12">
-          <motion.div 
-            className="absolute w-2 h-2 bg-primary/60 rounded-full"
-            animate={{ 
-              x: [0, 20, 0, -20, 0],
-              y: [0, -20, 0, 20, 0],
-              scale: [1, 0.5, 1, 0.5, 1]
-            }}
-            transition={{ 
-              duration: 2, 
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
-          />
-          <motion.div 
-            className="absolute w-2 h-2 bg-accent/60 rounded-full"
-            animate={{ 
-              x: [0, -15, 0, 15, 0],
-              y: [0, 15, 0, -15, 0],
-              scale: [0.5, 1, 0.5, 1, 0.5]
-            }}
-            transition={{ 
-              duration: 2, 
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 0.5
-            }}
-            style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
-          />
-        </div>
-      </motion.div>
-      
-      {/* Outer ring effect */}
-      <motion.div
-        className="fixed pointer-events-none z-[9997] border-2 border-primary/20 rounded-full"
-        style={{
-          left: mousePosition.x,
-          top: mousePosition.y,
-          transform: 'translate(-50%, -50%)',
-        }}
-        animate={{
-          width: isHovering ? '80px' : '40px',
-          height: isHovering ? '80px' : '40px',
-          opacity: isHovering ? 0.4 : 0.1,
-          borderWidth: isHovering ? '3px' : '1px',
+          ...trailVariants[cursorVariant as keyof typeof trailVariants],
+          opacity: isVisible ? trailVariants[cursorVariant as keyof typeof trailVariants].opacity : 0,
         }}
         transition={{
           type: "spring",
           stiffness: 200,
           damping: 30,
-          delay: 0.15,
+          delay: 0.1,
         }}
+        initial={false}
+      >
+        <div className="w-16 h-16" />
+      </motion.div>
+
+      {/* Main cursor */}
+      <motion.div
+        className="fixed pointer-events-none z-[9999] rounded-full"
+        style={{
+          left: mousePosition.x,
+          top: mousePosition.y,
+          transform: 'translate(-50%, -50%)',
+          mixBlendMode: cursorVariants[cursorVariant as keyof typeof cursorVariants].mixBlendMode as any,
+        }}
+        animate={{
+          ...cursorVariants[cursorVariant as keyof typeof cursorVariants],
+          opacity: isVisible ? 1 : 0,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 400,
+          damping: 28,
+        }}
+        initial={false}
       />
+
+      {/* Magnetic effect particles */}
+      {cursorVariant === 'hover' && (
+        <motion.div
+          className="fixed pointer-events-none z-[9998]"
+          style={{
+            left: mousePosition.x,
+            top: mousePosition.y,
+            transform: 'translate(-50%, -50%)',
+          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 bg-primary rounded-full"
+              animate={{
+                x: Math.cos((i * Math.PI * 2) / 6) * 25,
+                y: Math.sin((i * Math.PI * 2) / 6) * 25,
+                scale: [0, 1, 0],
+                opacity: [0, 1, 0],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                delay: i * 0.1,
+                ease: "easeInOut",
+              }}
+              style={{
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+              }}
+            />
+          ))}
+        </motion.div>
+      )}
+
+      {/* Text cursor line */}
+      {cursorVariant === 'text' && (
+        <motion.div
+          className="fixed pointer-events-none z-[9998] bg-foreground"
+          style={{
+            left: mousePosition.x,
+            top: mousePosition.y,
+            transform: 'translate(-50%, -50%)',
+            width: '2px',
+            height: '24px',
+          }}
+          animate={{
+            opacity: [1, 0, 1],
+          }}
+          transition={{
+            duration: 1,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      )}
     </>
   );
 };
