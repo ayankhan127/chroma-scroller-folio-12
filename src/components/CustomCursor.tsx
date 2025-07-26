@@ -3,62 +3,72 @@ import { motion } from 'framer-motion';
 
 const CustomCursor = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [cursorVariant, setCursorVariant] = useState('default');
+  const [cursorState, setCursorState] = useState('default');
   const [isVisible, setIsVisible] = useState(true);
+  const [velocity, setVelocity] = useState({ x: 0, y: 0 });
 
   const updateMousePosition = useCallback((e: MouseEvent) => {
-    setMousePosition({ x: e.clientX, y: e.clientY });
-  }, []);
+    const newX = e.clientX;
+    const newY = e.clientY;
+    
+    // Calculate velocity for organic movement
+    setVelocity({
+      x: newX - mousePosition.x,
+      y: newY - mousePosition.y
+    });
+    
+    setMousePosition({ x: newX, y: newY });
+  }, [mousePosition]);
 
-  const handleMouseEnter = useCallback(() => setCursorVariant('hover'), []);
-  const handleMouseLeave = useCallback(() => setCursorVariant('default'), []);
-  const handleTextEnter = useCallback(() => setCursorVariant('text'), []);
-  const handleLinkEnter = useCallback(() => setCursorVariant('link'), []);
-  const handleMouseDown = useCallback(() => setCursorVariant('click'), []);
-  const handleMouseUp = useCallback(() => setCursorVariant('default'), []);
+  const handleInteractiveEnter = useCallback(() => setCursorState('interactive'), []);
+  const handleTextEnter = useCallback(() => setCursorState('text'), []);
+  const handleLinkEnter = useCallback(() => setCursorState('link'), []);
+  const handleDefaultEnter = useCallback(() => setCursorState('default'), []);
+  const handleMouseDown = useCallback(() => setCursorState('click'), []);
+  const handleMouseUp = useCallback(() => setCursorState('default'), []);
 
   useEffect(() => {
     const addEventListeners = () => {
       // Interactive elements
-      const hoverElements = document.querySelectorAll(
-        'button, [data-cursor-hover], [role="button"], .cursor-pointer'
+      const interactiveElements = document.querySelectorAll(
+        'button, [data-cursor-hover], [role="button"], .cursor-pointer, input[type="button"], input[type="submit"]'
       );
       
-      // Text elements
+      // Text elements  
       const textElements = document.querySelectorAll(
-        'p, h1, h2, h3, h4, h5, h6, span, div[contenteditable], input, textarea'
+        'p, h1, h2, h3, h4, h5, h6, span:not(.icon), div[contenteditable], input[type="text"], input[type="email"], textarea'
       );
       
       // Link elements
       const linkElements = document.querySelectorAll('a');
 
-      hoverElements.forEach(el => {
-        el.addEventListener('mouseenter', handleMouseEnter);
-        el.addEventListener('mouseleave', handleMouseLeave);
+      interactiveElements.forEach(el => {
+        el.addEventListener('mouseenter', handleInteractiveEnter);
+        el.addEventListener('mouseleave', handleDefaultEnter);
       });
 
       textElements.forEach(el => {
         el.addEventListener('mouseenter', handleTextEnter);
-        el.addEventListener('mouseleave', handleMouseLeave);
+        el.addEventListener('mouseleave', handleDefaultEnter);
       });
 
       linkElements.forEach(el => {
         el.addEventListener('mouseenter', handleLinkEnter);
-        el.addEventListener('mouseleave', handleMouseLeave);
+        el.addEventListener('mouseleave', handleDefaultEnter);
       });
 
       return () => {
-        hoverElements.forEach(el => {
-          el.removeEventListener('mouseenter', handleMouseEnter);
-          el.removeEventListener('mouseleave', handleMouseLeave);
+        interactiveElements.forEach(el => {
+          el.removeEventListener('mouseenter', handleInteractiveEnter);
+          el.removeEventListener('mouseleave', handleDefaultEnter);
         });
         textElements.forEach(el => {
           el.removeEventListener('mouseenter', handleTextEnter);
-          el.removeEventListener('mouseleave', handleMouseLeave);
+          el.removeEventListener('mouseleave', handleDefaultEnter);
         });
         linkElements.forEach(el => {
           el.removeEventListener('mouseenter', handleLinkEnter);
-          el.removeEventListener('mouseleave', handleMouseLeave);
+          el.removeEventListener('mouseleave', handleDefaultEnter);
         });
       };
     };
@@ -75,7 +85,6 @@ const CustomCursor = () => {
       subtree: true,
     });
 
-    // Mouse event listeners
     window.addEventListener('mousemove', updateMousePosition);
     window.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mouseup', handleMouseUp);
@@ -91,109 +100,109 @@ const CustomCursor = () => {
       window.removeEventListener('mouseleave', () => setIsVisible(false));
       window.removeEventListener('mouseenter', () => setIsVisible(true));
     };
-  }, [updateMousePosition, handleMouseEnter, handleMouseLeave, handleTextEnter, handleLinkEnter, handleMouseDown, handleMouseUp]);
+  }, [updateMousePosition, handleInteractiveEnter, handleTextEnter, handleLinkEnter, handleDefaultEnter, handleMouseDown, handleMouseUp]);
 
+  // Organic blob cursor variants
   const cursorVariants = {
     default: {
-      scale: 1,
+      width: 12,
+      height: 12,
       backgroundColor: 'hsl(var(--primary))',
+      borderRadius: '50%',
+      scale: 1,
       mixBlendMode: 'difference',
-      width: 16,
-      height: 16,
-      border: 'none',
     },
-    hover: {
-      scale: 2.5,
+    interactive: {
+      width: 32,
+      height: 32,
       backgroundColor: 'transparent',
+      borderRadius: '30% 70% 70% 30% / 30% 30% 70% 70%',
+      scale: 1,
       mixBlendMode: 'normal',
-      width: 60,
-      height: 60,
       border: '2px solid hsl(var(--primary))',
     },
     text: {
-      scale: 1,
-      backgroundColor: 'transparent',
-      mixBlendMode: 'normal',
       width: 2,
-      height: 24,
-      border: '1px solid hsl(var(--foreground))',
+      height: 20,
+      backgroundColor: 'hsl(var(--foreground))',
+      borderRadius: '1px',
+      scale: 1,
+      mixBlendMode: 'difference',
     },
     link: {
-      scale: 1.5,
+      width: 16,
+      height: 16,
       backgroundColor: 'hsl(var(--accent))',
+      borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%',
+      scale: 1.2,
       mixBlendMode: 'difference',
-      width: 20,
-      height: 20,
-      border: 'none',
     },
     click: {
-      scale: 0.8,
+      width: 8,
+      height: 8,
       backgroundColor: 'hsl(var(--destructive))',
+      borderRadius: '50%',
+      scale: 0.8,
       mixBlendMode: 'difference',
-      width: 12,
-      height: 12,
-      border: 'none',
     }
-  };
-
-  const trailVariants = {
-    default: { scale: 1, opacity: 0.3 },
-    hover: { scale: 3, opacity: 0.1 },
-    text: { scale: 0.5, opacity: 0.2 },
-    link: { scale: 2, opacity: 0.4 },
-    click: { scale: 0.5, opacity: 0.5 }
   };
 
   return (
     <>
-      {/* Cursor trail */}
+      {/* Main liquid cursor */}
       <motion.div
-        className="fixed pointer-events-none z-[9997] rounded-full border border-primary/20"
+        className="fixed pointer-events-none z-[9999]"
         style={{
           left: mousePosition.x,
           top: mousePosition.y,
           transform: 'translate(-50%, -50%)',
         }}
         animate={{
-          ...trailVariants[cursorVariant as keyof typeof trailVariants],
-          opacity: isVisible ? trailVariants[cursorVariant as keyof typeof trailVariants].opacity : 0,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 200,
-          damping: 30,
-          delay: 0.1,
-        }}
-        initial={false}
-      >
-        <div className="w-16 h-16" />
-      </motion.div>
-
-      {/* Main cursor */}
-      <motion.div
-        className="fixed pointer-events-none z-[9999] rounded-full"
-        style={{
-          left: mousePosition.x,
-          top: mousePosition.y,
-          transform: 'translate(-50%, -50%)',
-          mixBlendMode: cursorVariants[cursorVariant as keyof typeof cursorVariants].mixBlendMode as any,
-        }}
-        animate={{
-          ...cursorVariants[cursorVariant as keyof typeof cursorVariants],
+          ...cursorVariants[cursorState as keyof typeof cursorVariants],
           opacity: isVisible ? 1 : 0,
+          rotate: cursorState === 'interactive' ? [0, 180, 360] : 0,
         }}
         transition={{
           type: "spring",
-          stiffness: 400,
-          damping: 28,
+          stiffness: 300,
+          damping: 25,
+          rotate: cursorState === 'interactive' ? {
+            duration: 3,
+            repeat: Infinity,
+            ease: "linear"
+          } : {}
         }}
-        initial={false}
       />
 
-      {/* Magnetic effect particles */}
-      {cursorVariant === 'hover' && (
+      {/* Trailing blob effect */}
+      <motion.div
+        className="fixed pointer-events-none z-[9998]"
+        style={{
+          left: mousePosition.x,
+          top: mousePosition.y,
+          transform: 'translate(-50%, -50%)',
+        }}
+        animate={{
+          width: cursorState === 'interactive' ? 48 : 24,
+          height: cursorState === 'interactive' ? 48 : 24,
+          opacity: isVisible ? (cursorState === 'text' ? 0 : 0.2) : 0,
+          borderRadius: cursorState === 'interactive' 
+            ? '60% 40% 30% 70% / 60% 30% 70% 40%' 
+            : '70% 30% 30% 70% / 70% 70% 30% 30%',
+          backgroundColor: cursorState === 'link' ? 'hsl(var(--accent))' : 'hsl(var(--primary))',
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 150,
+          damping: 20,
+          delay: 0.05,
+        }}
+      />
+
+      {/* Organic particles for interactive state */}
+      {cursorState === 'interactive' && (
         <motion.div
-          className="fixed pointer-events-none z-[9998]"
+          className="fixed pointer-events-none z-[9997]"
           style={{
             left: mousePosition.x,
             top: mousePosition.y,
@@ -203,20 +212,30 @@ const CustomCursor = () => {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          {[...Array(6)].map((_, i) => (
+          {[...Array(4)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute w-1 h-1 bg-primary rounded-full"
+              className="absolute w-1.5 h-1.5 bg-primary/60 rounded-full"
               animate={{
-                x: Math.cos((i * Math.PI * 2) / 6) * 25,
-                y: Math.sin((i * Math.PI * 2) / 6) * 25,
-                scale: [0, 1, 0],
-                opacity: [0, 1, 0],
+                x: [
+                  0,
+                  Math.cos((i * Math.PI * 2) / 4 + Date.now() * 0.001) * 20,
+                  Math.cos((i * Math.PI * 2) / 4 + Date.now() * 0.001 + Math.PI) * 15,
+                  0
+                ],
+                y: [
+                  0,
+                  Math.sin((i * Math.PI * 2) / 4 + Date.now() * 0.001) * 20,
+                  Math.sin((i * Math.PI * 2) / 4 + Date.now() * 0.001 + Math.PI) * 15,
+                  0
+                ],
+                scale: [0, 1, 0.5, 0],
+                opacity: [0, 0.8, 0.4, 0],
               }}
               transition={{
-                duration: 2,
+                duration: 2.5,
                 repeat: Infinity,
-                delay: i * 0.1,
+                delay: i * 0.2,
                 ease: "easeInOut",
               }}
               style={{
@@ -229,27 +248,27 @@ const CustomCursor = () => {
         </motion.div>
       )}
 
-      {/* Text cursor line */}
-      {cursorVariant === 'text' && (
-        <motion.div
-          className="fixed pointer-events-none z-[9998] bg-foreground"
-          style={{
-            left: mousePosition.x,
-            top: mousePosition.y,
-            transform: 'translate(-50%, -50%)',
-            width: '2px',
-            height: '24px',
-          }}
-          animate={{
-            opacity: [1, 0, 1],
-          }}
-          transition={{
-            duration: 1,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      )}
+      {/* Velocity-based morphing trail */}
+      <motion.div
+        className="fixed pointer-events-none z-[9996] bg-primary/10 rounded-full"
+        style={{
+          left: mousePosition.x,
+          top: mousePosition.y,
+          transform: 'translate(-50%, -50%)',
+        }}
+        animate={{
+          width: Math.min(40, Math.max(16, Math.abs(velocity.x) + Math.abs(velocity.y))),
+          height: Math.min(40, Math.max(16, Math.abs(velocity.x) + Math.abs(velocity.y))),
+          opacity: isVisible ? 0.15 : 0,
+          borderRadius: `${50 + Math.sin(Date.now() * 0.003) * 20}% ${50 + Math.cos(Date.now() * 0.004) * 20}% ${50 + Math.sin(Date.now() * 0.005) * 20}% ${50 + Math.cos(Date.now() * 0.006) * 20}%`,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 100,
+          damping: 30,
+          delay: 0.15,
+        }}
+      />
     </>
   );
 };
