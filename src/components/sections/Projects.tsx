@@ -87,7 +87,7 @@ const Projects = () => {
   };
 
   return (
-    <section id="projects" className="section-padding bg-muted/30" ref={ref}>
+    <section id="projects" className="section-padding bg-muted/30 pt-32 md:pt-40" ref={ref}>
       <motion.div
         className="max-w-7xl mx-auto"
         variants={containerVariants}
