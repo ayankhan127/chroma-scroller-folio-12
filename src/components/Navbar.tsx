@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Menu, X, Sun, Moon } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
+import logoImg from '../assets/logo-professional.png';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -66,7 +67,7 @@ const Navbar = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
-          {/* Enhanced Logo */}
+          {/* Professional Logo */}
           <motion.div
             className="flex items-center space-x-3 cursor-pointer group"
             onClick={() => scrollToSection('home')}
@@ -74,25 +75,37 @@ const Navbar = () => {
             whileTap={{ scale: 0.95 }}
             data-cursor-hover
           >
-            <motion.span 
-              className="text-3xl filter drop-shadow-lg"
-              animate={{ 
-                rotate: [0, 10, -10, 0],
+            <motion.div 
+              className="w-12 h-12 relative overflow-hidden rounded-xl bg-gradient-to-br from-primary to-accent p-2 shadow-lg"
+              whileHover={{ 
+                rotate: [0, -10, 10, 0],
                 scale: [1, 1.1, 1]
               }}
               transition={{ 
-                duration: 4, 
-                repeat: Infinity,
+                duration: 0.6, 
                 ease: "easeInOut"
               }}
             >
-              🤖
-            </motion.span>
+              <img 
+                src={logoImg} 
+                alt="Code with Ayan Logo" 
+                className="w-full h-full object-contain filter brightness-0 invert"
+              />
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                animate={{ x: [-100, 100] }}
+                transition={{ 
+                  duration: 2, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+              />
+            </motion.div>
             <div className="flex flex-col">
               <span className="text-xl font-display font-bold text-gradient-neon">
                 Code with Ayan
               </span>
-              <span className="text-xs text-muted-foreground font-medium">
+              <span className="text-xs text-muted-foreground font-medium tracking-wide">
                 Full Stack Developer
               </span>
             </div>
